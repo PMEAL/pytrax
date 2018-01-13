@@ -34,19 +34,19 @@ class SimulationTest():
         assert sp.sum(self.rw_2d.im_big > self.rw_2d.nw) == 0
         plt.close('all')
 
-    def test_export(self):
-        cwd = os.getcwd()
-        self.rw_2d.export_walk(sub='temp', image=self.rw_2d.im, sample=10)
-        subdir = os.path.join(cwd, 'temp')
-        assert os.path.exists(subdir)
-        file_list = os.listdir(subdir)
-        # 10 coordinate files based on the stride and number of steps + image
-        assert len(file_list) == 11
-        # Delete all files and folder
-        for file in file_list:
-            fp = os.path.join(subdir, file)
-            os.remove(fp)
-        os.rmdir(subdir)
+#    def test_export(self):
+#        cwd = os.getcwd()
+#        self.rw_2d.export_walk(sub='temp', image=self.rw_2d.im, sample=10)
+#        subdir = os.path.join(cwd, 'temp')
+#        assert os.path.exists(subdir)
+#        file_list = os.listdir(subdir)
+#        # 10 coordinate files based on the stride and number of steps + image
+#        assert len(file_list) == 11
+#        # Delete all files and folder
+#        for file in file_list:
+#            fp = os.path.join(subdir, file)
+#            os.remove(fp)
+#        os.rmdir(subdir)
 
     def test_seed(self):
         # rw_2d was initialized with seed = True, this should mean running it
@@ -77,7 +77,7 @@ if __name__ == '__main__':
     t.test_plot_msd()
     t.test_random_walk_2d()
     t.test_plot_walk_2d()
-    t.test_export()
+#    t.test_export()
     t.test_seed()
     t.test_axial_density_plot()
     t.test_rw_analytics()

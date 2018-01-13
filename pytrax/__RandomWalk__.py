@@ -59,8 +59,9 @@ class RandomWalk():
         Creating a RandomWalk object:
 
         >>> import porespy as ps
+        >>> import pytrax as pt
         >>> im = ps.generators.blobs([100, 100])
-        >>> rw = ps.simulations.RandomWalk(im)
+        >>> rw = pt.RandomWalk(im)
         >>> rw.run(nt=1000, nw=100)
         '''
         self.im = image
