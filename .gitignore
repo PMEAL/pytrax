@@ -6,3 +6,5 @@
 
 # Python egg metadata, regenrated from source files in setuptools
 /*.egg-info
+.cache/
+.coverage
