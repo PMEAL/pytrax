@@ -10,7 +10,7 @@ class SimulationTest():
         self.l = 100
         self.im = ps.generators.overlapping_spheres(shape=[self.l, self.l],
                                                     radius=5,
-                                                    porosity=0.5)
+                                                    porosity=0.55)
         self.blobs = ps.generators.blobs([self.l, self.l, self.l])
         self.rw = pt.RandomWalk(self.blobs)
         self.blobs_2d = ps.generators.blobs([self.l, self.l]).astype(int)
