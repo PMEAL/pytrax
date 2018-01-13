@@ -1,5 +1,8 @@
-# pytrax
-Random walk to calculate the tortuosity tensor of images.
+###############################################################################
+Overview of pytrax
+###############################################################################
+
+*pytrax* is an implementation of a random walk to calculate the tortuosity tensor of images.
 
 ===============================================================================
 Example Usage
