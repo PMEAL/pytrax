@@ -10,7 +10,6 @@ import numpy as np
 import matplotlib
 import matplotlib.pyplot as plt
 import porespy as ps
-from porespy.tools.__funcs__ import do_profile
 from tqdm import tqdm
 import os
 import time
@@ -60,8 +59,9 @@ class RandomWalk():
         Creating a RandomWalk object:
 
         >>> import porespy as ps
+        >>> import pytrax as pt
         >>> im = ps.generators.blobs([100, 100])
-        >>> rw = ps.simulations.RandomWalk(im)
+        >>> rw = pt.RandomWalk(im)
         >>> rw.run(nt=1000, nw=100)
         '''
         self.im = image
@@ -252,9 +252,6 @@ class RandomWalk():
                 real_coords.append(wr.copy())
         return real_coords
 
-    # Uncomment the line below to profile the run method
-    # Only works for single process
-#    @do_profile(follow=[_run_walk, check_wall, check_edge])
     def run(self, nt=1000, nw=1, same_start=False, stride=1, num_proc=None):
         r'''
         Main run loop over nt timesteps and nw walkers.

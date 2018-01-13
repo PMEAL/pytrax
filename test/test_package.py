@@ -1,5 +1,4 @@
-import porespy as ps
-import scipy as sp
+import pytrax as pt
 import git
 
 
@@ -12,4 +11,4 @@ class PackageTest():
         tag = repo.git.describe("--tags")
         tag = tag.strip('vV')  # Remove 'v' or 'V' from tag if present
         tag = tag.split('-')[0]  # Remove hash from tag number if present
-        assert ps.__version__ == tag
+        assert pt.__version__ == tag
