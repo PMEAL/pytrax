@@ -1,5 +1,6 @@
 
 .. image:: https://readthedocs.org/projects/pytrax/badge/?version=latest
+.. image:: https://travis-ci.org/PMEAL/pytrax.svg?branch=master
 ###############################################################################
 Overview of pytrax
 ###############################################################################
