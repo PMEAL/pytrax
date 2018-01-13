@@ -152,6 +152,3 @@ texinfo_documents = [
      author, 'pytrax', 'One line description of project.',
      'Miscellaneous'),
 ]
-
-
-
