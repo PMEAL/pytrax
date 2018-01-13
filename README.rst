@@ -1,6 +1,16 @@
 
-.. image:: https://readthedocs.org/projects/pytrax/badge/?version=latest
+.. image:: https://badge.fury.io/py/pytrax.svg
+   :target: https://pypi.python.org/pypi/pytrax
+
 .. image:: https://travis-ci.org/PMEAL/pytrax.svg?branch=master
+   :target: https://travis-ci.org/PMEAL/pytrax
+
+.. image:: https://codecov.io/gh/PMEAL/pytrax/branch/master/graph/badge.svg
+   :target: https://codecov.io/gh/PMEAL/pytrax
+
+.. image:: https://readthedocs.org/projects/pytrax/badge/?version=latest
+   :target: http://pytrax.readthedocs.org/
+
 ###############################################################################
 Overview of pytrax
 ###############################################################################
