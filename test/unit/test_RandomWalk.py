@@ -61,9 +61,9 @@ class SimulationTest():
         plt.close('all')
 
     def test_rw_analytics(self):
-        w_list = [10, 100]
-        t_list = [10, 100]
-        self.rw_2d.run_analytics(w_list, t_list, fname='test.csv')
+        w_list = [100]
+        t_list = [100]
+        self.rw_2d.run_analytics(w_list, t_list, fname='test.csv', num_proc=1)
         cwd = os.getcwd()
         fpath = os.path.join(cwd, 'test.csv')
         assert os.path.exists(fpath)
