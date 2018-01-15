@@ -1,7 +1,5 @@
 .. _open_space:
 
-.. sectnum::
-   :start: 1
 
 ###############################################################################
  Example 1: A Random Walk in Open Space

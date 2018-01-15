@@ -1,111 +1,68 @@
-.. _open_space:
+.. _3d_blobs:
 
-.. sectnum::
-   :start: 1
 
 ###############################################################################
- Example 1: A Random Walk in Open Space
+ Example 4: Anisotropic 3D Blobs
 ###############################################################################
 
-This example is the simplest use of pytrax but also illustrates an underlying theory of diffusion which is that the mean square displacement of diffusing particles should grow linearly with time.
+This example will demonstrate the principle of calculating the tortuosity from a 3D porous image with anisotropy.
 
 .. contents:: Topics Covered in this Tutorial
 
 **Learning Objectives**
 
-#. Introduce the main class in the pytrax package, RandomWalk
-#. Run the RandomWalk for an image devoid of solid features to demonstrate the principles of the package
-#. Produce some visualization
-
-
-.. hint:: Python and Numpy Tutorials
-
-	* pytrax is written in Python.  One of the best guides to learning Python is the set of Tutorials available on the `official Python website <https://docs.python.org/3.5/tutorial>`_). The web is literally overrun with excellent Python tutorials owing to the popularity and importance of the language.  The official Python website also provides `an long list of resources <https://www.python.org/about/gettingstarted/>`_
-
-	* For information on using Numpy, Scipy and generally doing scientific computing in Python checkout the `Scipy lecture notes <http://www.scipy-lectures.org/>`_.  The Scipy website also offers as solid introduction to `using Numpy arrays <https://docs.scipy.org/doc/numpy-dev/user/quickstart.html>`_.
-
-	* The `Stackoverflow <http://www.stackoverflow.com>`_ website is an incredible resource for all computing related questions, including simple usage of Python, Scipy and Numpy functions.
-
-	* For users more familiar with Matlab, there is a `Matlab-Numpy cheat sheet <http://mathesaurus.sourceforge.net/matlab-numpy.html>`_ that explains how to translate familiar Matlab commands to Numpy.
+#. Generate an anisotropic 3D imgage with the porespy package
+#. Run the RandomWalk for the image showing the anisotropic tortuosity
+#. Export the results and visualize with Paraview
 
 ===============================================================================
-Instantiating the RandomWalk class
+Generating the Image with porespy
 ===============================================================================
 
-The first thing to do is to import the packages that we are going to use.  Start by importing pytrax and the Numpy package:
+In this example we generate a 3D anisotropic image with another PMEAL package called `porespy <https://github.com/PMEAL/porespy>`_ which can be installed with ``pip``. The image will be 300 voxels cubed, have a porosity of 0.5 and the blobs will be stretched in each principle direction by a different factor or [1, 2, 5]:
 
 .. code-block:: python
 
-	>>> import pytrax as pt
-	>>> import numpy as np
+    >>> import porespy as ps
+    >>> im = ps.generators.blobs(shape=[300], porosity=0.5, blobiness=[1, 2, 5]).astype(int)
 
-Next, in order to instaintiate the RandomWalk class from the pytrax package we first need to make an binary image where 1 denotes open space available to walk on and 0 denotes a solid obstacle. In this example we are going set our walkers to explore open space and so we can build an image only containing ones. The size of the image doesn't matter, which will be explained later but for demostration purposes we will make the image two-dimensional:
+===============================================================================
+Running and exporting the walk with Paraview
+===============================================================================
+
+We're now ready to instantiate and run the walk:
 
 .. code-block:: python
 
-	>>> image = np.ones(shape=[3, 3], dtype=int)
-	>>> rw = pt.RandomWalk(image=image, seed=False)
+	>>> rw = pt.RandomWalk(im)
+	>>> rw.run(nt=1e4, nw=1e4, same_start=False, stride=100, num_proc=10)
+    >>> rw.plot_msd()
 
-We now have a RandomWalk object instantiated with the handle ``rw``.
-
-* The ``image`` argument sets the domain of the random walk and is stored on the object for all future simulations.
-
-* The ``seed`` argument controls whether the random number generators in the class are seeded which means that they will always behave the same when running the walk multiple times with the same parameters. This is useful for debugging but under all other circumstances as it results in only semi-random walks.
-
-===============================================================================
-Running and ploting the walk
-===============================================================================
-
-We're now ready to run the walk:
-
-.. code-block:: python
-
-	>>> rw.run(nt=1000, nw=1000, same_start=False, stride=1, num_proc=1)
-	>>> rw.plot_walk_2d()
-
-* ``nt`` is the number of steps that each walker will take
-
-* ``nw`` is the number of walkers to run concurrently
-
-* ``same_start`` is a boolean controlling whether the walkers all start at the same spot in the image. By default this is False and this will result in the walkers being started randomly at different locations.
-
-* ``stride`` is a reporting variable and does not affect the length of the strides taken by each walker (which are always one voxel at a time), but controls how many steps are saved for plotting and export.
-
-* ``num_proc`` sets the number of parallel processors to run. By default half the number available will be used and the walkers will be divided into batches and run in parallel.
-
-Each walk is completley independent of any other which sounds strange as Brownian motion is intended to simulate particle-particle interactions. However, we are not simulating this directly but encompassing the behaviour by randomly changing the direction of the steps taken on an individual walker basis. The second line should produce a plot showing all the walkers colored by timestep, like the one below:
-
-.. image:: https://imgur.com/74bYtJb
+The simulation should take no longer than 45 seconds when running on a single process and should produce an MSD plot like this:
+	
+.. image:: https://imgur.com/cnAbJ29.png
    :align: center
 
-The appearance of the plot tells us a few things about the process. The circular shape and uniform color shows that the walkers are evenly distributed and have walked in each direction in approximately equal proportions. To display this information more clearly we can plot the mean square displacement (MSD) over time:
-
+Unlike the previous examples, the MSD plot clearly shows that the axial square displacement is different along the different axes and this produces a tortuosity that approximately scales with the blobiness of the image. The image is three-dimensional and so we cannot use the 2D plotting function to visualize the walks, instead we make use of the export function to produce a set of files that can be read with Paraview:
+   
 .. code-block:: python
 
-	>>> rw.plot_msd()
+	>>> rw.export_walk(image=rw.im, sample=1)
+	
+This arguments ``image`` sets the image to be exported to be the original domain, optionally we could leave the argument as ``None`` in which case only the walker coordinated would be exported or we could set it to ``rw.im_big`` to export the domain encompassing all the walks. Caution should be exercised when using this function as larger domains produce very large files. The second argument ``sample`` tells the function to down-sample the coordinate data by this factor. We have already set a stride to only record every 100 steps which is useful for speeding up calculating the MSD and so the sample is left as the default of 1. The export function also accepts a ``path``, ``sub`` and ``prefix`` argument which lets you specify where to save the data and what to name the subfolder at this path location and also a prefix for the filenames to be saved. By default the current working directory is used as the path, ``data`` is used for the subdirectory and ``rw_`` is used as a prefix. After running the function, which takes a few seconds to complete, inspect your current working directory which should contain the exported data. There should be 101 files in the data folder: A small file containing the coordinates of each walker at each recorded time step with extention ``.vtu`` and larger file named ``rw_image.vti``. To load and view these files in Paraview take the following steps:
 
-.. image:: https://imgur.com/2YjL0C9
+#. Open the ``rw_image.vti`` file and press Apply
+#. Change Representation to Surface and under Coloring change the variable from ``Solid Color`` to ``image_data``
+#. Apply a Threshold filter to this object (this may take a little while to process) and set the Maximum of the threshold to be 0 (again processing of this step takes some time)
+#. Now you can rotate the image and inspect only the solid portions in 3D
+#. Open the ``.vtu`` as a group and click Apply and a bunch of white dots should appear on the screen displaying the walker starting locations.
+#. Pressing the green play button will now animate the walkers.
+#. If you desire to see the paths taken by each walker saved on the screen then select the coords object and open the filters menu then select ``TemporalParticlesToPathlines``. Change the ``Mask Points`` property to 1, ``Max Track Length`` to exceed the total number of steps and ``Max Step Distance`` to exceed the stride.
+#. To produce animations adjust settings in the Animations view.
+
+The following images can be produced:
+
+
+.. image:: https://imgur.com/682ofAo.png
    :align: center
    
-The ``plot_msd`` function shows that mean square displacement and axial displacement are all the same and increase linearly with time. A neat explanation of why this is can be found in this paper http://rsif.royalsocietypublishing.org/cgi/doi/10.1098/rsif.2008.0014 which derives the probability debnsity function for the location of a walker after time ``t`` as:
-
-..math::
-
-	p(x,t) = \frac{1}{\sqrt{4\piDt}exp\left(\frac{-x^2}{4Dt}\right)
-	
-Which is the fundamental solution to the diffusion equation and so walker positions follow a Gaussian distribution which spreads out and has the property that MSD increases linearly with time. pytrax makes use of this property to calculate the toruosity of the image domain by using the definition that tortuosity is the ratio of diffusion in a porous space compared with that in open space. This simply translates to the reciprocal of the slope of the MSD which is unity for open space, as shown by this example. As a result of plotting the MSD we have some extra data on the RandomWalk object and we can use it to find the walker that travelled the furthest:
-
-.. code-block:: python
- 
-	>>> rw.plot_walk_2d(w_id=np.argmax(rw.sq_disp[-1, :]), data='t')
-	
-.. image:: https://imgur.com/WwRFWGJ
-   :align: center
-   
-The attribute ``rw.sq_disp`` is the square displacement for all walkers at all stride steps which is all steps for this example. Indexing ``-1`` takes the last row and indexing ``:`` takes the whole row, the numpy function ``argmax`` returns the index of the largest value and this integer value is used for the ``w_id`` argument of the plotting function which stands for walker index.
-
-===============================================================================
-A note on the image boundaries
-===============================================================================
-
-As mentioned previously, the size of the image we used to instantiate the RandomWalk class for this example did not matter. This is because the walkers are allowed to leave the domain if there is a path in open space allowing them to do so. The image is treated as a representative sample of some larger medium and if the walkers were not allowed to leave the original domain their MSD's would eventually plateau and this would not be represtative of the general diffusive behaviour. The plotting function is actually showing an array of real and reflected domains with the original at the center, although this is hard to see with this example as there are no solid features and so the reflected images are identical to the original. We will discuss more on this later.

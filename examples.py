@@ -14,7 +14,7 @@ save_figures = False
 global_stride = None
 plt.close('all')
 if __name__ == '__main__':
-    for image_run in [0]:
+    for image_run in [3]:
         if image_run == 0:
             # Open space
             im = np.ones([3, 3], dtype=int)
@@ -65,7 +65,7 @@ if __name__ == '__main__':
         # Track time of simulation
         st = time.time()
         rw = pt.RandomWalk(im, seed=False)
-        rw.run(num_t, num_w, same_start=False, stride=stride, num_proc=1)
+        rw.run(num_t, num_w, same_start=False, stride=stride, num_proc=10)
         print('run time', time.time()-st)
         rw.calc_msd()
         # Plot mean square displacement
