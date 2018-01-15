@@ -9,6 +9,7 @@ Welcome to pytrax's documentation!
 
     getting_started.rst
     user_guide.rst
+    examples/index.rst
 
 
 ==================
