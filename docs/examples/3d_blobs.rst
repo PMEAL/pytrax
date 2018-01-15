@@ -34,8 +34,8 @@ We're now ready to instantiate and run the walk:
 
 .. code-block:: python
 
-	>>> rw = pt.RandomWalk(im)
-	>>> rw.run(nt=1e4, nw=1e4, same_start=False, stride=100, num_proc=10)
+    >>> rw = pt.RandomWalk(im)
+    >>> rw.run(nt=1e4, nw=1e4, same_start=False, stride=100, num_proc=10)
     >>> rw.plot_msd()
 
 The simulation should take no longer than 45 seconds when running on a single process and should produce an MSD plot like this:
@@ -47,7 +47,7 @@ Unlike the previous examples, the MSD plot clearly shows that the axial square d
    
 .. code-block:: python
 
-	>>> rw.export_walk(image=rw.im, sample=1)
+    >>> rw.export_walk(image=rw.im, sample=1)
 	
 This arguments ``image`` sets the image to be exported to be the original domain, optionally we could leave the argument as ``None`` in which case only the walker coordinated would be exported or we could set it to ``rw.im_big`` to export the domain encompassing all the walks. Caution should be exercised when using this function as larger domains produce very large files. The second argument ``sample`` tells the function to down-sample the coordinate data by this factor. We have already set a stride to only record every 100 steps which is useful for speeding up calculating the MSD and so the sample is left as the default of 1. The export function also accepts a ``path``, ``sub`` and ``prefix`` argument which lets you specify where to save the data and what to name the subfolder at this path location and also a prefix for the filenames to be saved. By default the current working directory is used as the path, ``data`` is used for the subdirectory and ``rw_`` is used as a prefix. After running the function, which takes a few seconds to complete, inspect your current working directory which should contain the exported data. There should be 101 files in the data folder: A small file containing the coordinates of each walker at each recorded time step with extention ``.vtu`` and larger file named ``rw_image.vti``. To load and view these files in Paraview take the following steps:
 

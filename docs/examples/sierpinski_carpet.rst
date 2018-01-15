@@ -24,13 +24,13 @@ Assuming that you are now familiar with how to import and instantiate the simula
 .. code-block:: python
 
     >>> def tileandblank(image, n):
-    >>> 	if n > 0:
-    >>> 		n -= 1
-    >>> 		shape = np.asarray(np.shape(image))
-    >>> 		image = np.tile(image, (3, 3))
-    >>> 		image[shape[0]:2*shape[0], shape[1]:2*shape[1]] = 0
-    >>> 		image = tileandblank(image, n)
-    >>> 	return image
+    >>>     if n > 0:
+    >>>         n -= 1
+    >>>         shape = np.asarray(np.shape(image))
+    >>>         image = np.tile(image, (3, 3))
+    >>>         image[shape[0]:2*shape[0], shape[1]:2*shape[1]] = 0
+    >>>         image = tileandblank(image, n)
+    >>>     return image
     >>> im = np.ones([1, 1], dtype=int)
     >>> im = tileandblank(im, 4)
 
@@ -42,9 +42,9 @@ We're now ready to instantiate and run the walk, this time lets test the power o
 
 .. code-block:: python
 
-	>>> rw = pt.RandomWalk(im)
-	>>> rw.run(nt=2500, nw=1e6, same_start=False, stride=5, num_proc=10)
-	>>> rw.plot_walk_2d()
+    >>> rw = pt.RandomWalk(im)
+    >>> rw.run(nt=2500, nw=1e6, same_start=False, stride=5, num_proc=10)
+    >>> rw.plot_walk_2d()
 
 The simulation should take no longer than a minute when running on a single process and should produce a plot like this:
 	
@@ -55,7 +55,7 @@ Like the open space example the pattern is radial because the image is isotropic
 
 .. code-block:: python
 
-	>>> rw.plot_msd()
+    >>> rw.plot_msd()
 
 .. image:: https://imgur.com/6QPCXYq.png
    :align: center
