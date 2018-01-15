@@ -328,7 +328,7 @@ class RandomWalk():
         r'''
         Helper method to add a line to the msd plot
         '''
-        a, res, _, _ = np.linalg.lstsq(x, y)
+        a, res, _, _ = np.linalg.lstsq(x, y, rcond=None)
         tau = 1/a[0]
         SStot = np.sum((y - y.mean())**2)
         rsq = 1 - (np.sum(res)/SStot)
@@ -400,8 +400,7 @@ class RandomWalk():
             if len(np.shape(image)) == 2:
                 image = image[:, :, np.newaxis]
             im_fp = os.path.join(path, prefix+'image')
-            ps.export.evtk.imageToVTK(im_fp,
-                                      cellData={'image_data': image})
+            ps.io.evtk.imageToVTK(im_fp, cellData={'image_data': image})
         # number of zeros to fill the file index
         zf = np.int(np.ceil(np.log10(self.nt*10)))
         w_id = np.arange(0, self.nw, sample)
@@ -418,11 +417,11 @@ class RandomWalk():
             if self.dim == 3:
                 z_coords = np.ascontiguousarray(coords[t, w_id, 2])
             wc_fp = os.path.join(path, prefix+'coords_'+str(st).zfill(zf))
-            ps.export.evtk.pointsToVTK(path=wc_fp,
-                                       x=x_coords,
-                                       y=y_coords,
-                                       z=z_coords,
-                                       data={'time': time_data})
+            ps.io.evtk.pointsToVTK(path=wc_fp,
+                                   x=x_coords,
+                                   y=y_coords,
+                                   z=z_coords,
+                                   data={'time': time_data})
 
     def _build_big_image(self, num_copies=0):
         r'''
