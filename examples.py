@@ -9,12 +9,15 @@ import pytrax as pt
 import time
 import numpy as np
 import matplotlib.pyplot as plt
+import urllib.request as ur
+from io import BytesIO
+from PIL import Image
 
 save_figures = False
 global_stride = None
 plt.close('all')
 if __name__ == '__main__':
-    for image_run in [3]:
+    for image_run in [1]:
         if image_run == 0:
             # Open space
             im = np.ones([3, 3], dtype=int)
@@ -24,7 +27,11 @@ if __name__ == '__main__':
             stride = 10
         elif image_run == 1:
             # Load tau test image
-            im = 1 - ps.data.tau()
+            url = 'https://i.imgur.com/nrEJRDf.png'
+            file = BytesIO(ur.urlopen(url).read())
+            im = np.asarray(Image.open(file))[:, :, 3] == 0
+            im = im.astype(int)
+            im = np.pad(im, pad_width=50, mode='constant', constant_values=1)
             fname = 'tau_'
             # Number of time steps and walkers
             num_t = 20000
@@ -65,7 +72,7 @@ if __name__ == '__main__':
         # Track time of simulation
         st = time.time()
         rw = pt.RandomWalk(im, seed=False)
-        rw.run(num_t, num_w, same_start=False, stride=stride, num_proc=10)
+        rw.run(num_t, num_w, same_start=False, stride=stride)
         print('run time', time.time()-st)
         rw.calc_msd()
         # Plot mean square displacement
