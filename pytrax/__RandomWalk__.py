@@ -328,7 +328,7 @@ class RandomWalk():
         r'''
         Helper method to add a line to the msd plot
         '''
-        a, res, _, _ = np.linalg.lstsq(x, y, rcond=None)
+        a, res, _, _ = np.linalg.lstsq(x, y, rcond=-1)
         tau = 1/a[0]
         SStot = np.sum((y - y.mean())**2)
         rsq = 1 - (np.sum(res)/SStot)
