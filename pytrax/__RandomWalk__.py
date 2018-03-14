@@ -252,7 +252,7 @@ class RandomWalk():
                 real_coords.append(wr.copy())
         return real_coords
 
-    def run(self, nt=1000, nw=1, same_start=False, stride=1, num_proc=None):
+    def run(self, nt=1000, nw=1, same_start=False, stride=1, num_proc=1):
         r'''
         Main run loop over nt timesteps and nw walkers.
         same_start starts all the walkers at the same spot if True and at
@@ -268,8 +268,10 @@ class RandomWalk():
             determines whether to start all the walkers at the same coordinate
         stride: int
             save coordinate data every stride number of timesteps
-        num_proc: int (default None - uses half available)
-            number of concurrent processes to start running
+        num_proc: int (default 1, None - uses half available)
+            number of concurrent processes to start running. Please make sure
+            that the run method is c a __main__ method when using
+            multiprocessing.
         '''
         self.nt = int(nt)
         self.nw = int(nw)
@@ -544,9 +546,9 @@ class RandomWalk():
             porous[np.where(porous == 0)] = np.nan
             plt.imshow(big_im, cmap=cmap)
             # Make Solid Black
-            plt.imshow(solid, cmap='binary', vmin=0, vmax=1)
+#            plt.imshow(solid, cmap='binary', vmin=0, vmax=1)
             # Make Untouched Porous White
-            plt.imshow(porous, cmap='gist_gray', vmin=0, vmax=1)
+#            plt.imshow(porous, cmap='gist_gray', vmin=0, vmax=1)
             if check_solid:
                 print('Solid pixel match?', sb == sa, sb, sa)
 
