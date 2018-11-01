@@ -16,6 +16,7 @@ import time
 import csv
 from concurrent.futures import ProcessPoolExecutor
 import gc
+from pyevtk.hl import imageToVTK, pointsToVTK
 cmap = matplotlib.cm.viridis
 
 
@@ -402,7 +403,7 @@ class RandomWalk():
             if len(np.shape(image)) == 2:
                 image = image[:, :, np.newaxis]
             im_fp = os.path.join(path, prefix+'image')
-            ps.io.evtk.imageToVTK(im_fp, cellData={'image_data': image})
+            imageToVTK(im_fp, cellData={'image_data': image})
         # number of zeros to fill the file index
         zf = np.int(np.ceil(np.log10(self.nt*10)))
         w_id = np.arange(0, self.nw, sample)
@@ -419,11 +420,11 @@ class RandomWalk():
             if self.dim == 3:
                 z_coords = np.ascontiguousarray(coords[t, w_id, 2])
             wc_fp = os.path.join(path, prefix+'coords_'+str(st).zfill(zf))
-            ps.io.evtk.pointsToVTK(path=wc_fp,
-                                   x=x_coords,
-                                   y=y_coords,
-                                   z=z_coords,
-                                   data={'time': time_data})
+            pointsToVTK(path=wc_fp,
+                        x=x_coords,
+                        y=y_coords,
+                        z=z_coords,
+                        data={'time': time_data})
 
     def _build_big_image(self, num_copies=0):
         r'''
@@ -510,7 +511,7 @@ class RandomWalk():
         Wrapper for saving figure in journal format
         '''
         plt.figaspect(1)
-        plt.savefig(filename=figname, dpi=dpi, facecolor='w', edgecolor='w',
+        plt.savefig(fname=figname, dpi=dpi, facecolor='w', edgecolor='w',
                     format='png', bbox_inches='tight', pad_inches=0.0)
 
     def plot_walk_2d(self, w_id=None, data='t', check_solid=False):
