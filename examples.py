@@ -13,10 +13,11 @@ import urllib.request as ur
 from io import BytesIO
 from PIL import Image
 
-save_figures = True
+save_figures = False
 global_stride = None
 plt.close('all')
 if __name__ == '__main__':
+    # Change number to run different example of include many in list
     for image_run in [5]:
         if image_run == 0:
             # Open space
@@ -115,12 +116,11 @@ if __name__ == '__main__':
         else:
             if save_figures:
                 # export to paraview
-                # pass
                 rw.export_walk(image=rw.im, sample=1)
-#        nstrides = np.shape(rw.real_coords)[0]-1
-#        steps = [np.int(np.floor(nstrides*i/4)) for i in np.arange(0, 5, 1)]
-#        for step in steps:
-#            rw.axial_density_plot(time=step, bins=50)
-#            plt.title('Timestep: '+str(step*stride))
-#            if save_figures:
-#                rw._save_fig(fname+'density_'+str(step*stride)+'.png', dpi=dpi)
+        nstrides = np.shape(rw.real_coords)[0]-1
+        steps = [np.int(np.floor(nstrides*i/4)) for i in np.arange(0, 5, 1)]
+        for step in steps:
+            rw.axial_density_plot(time=step, bins=50)
+            plt.title('Timestep: '+str(step*stride))
+            if save_figures:
+                rw._save_fig(fname+'density_'+str(step*stride)+'.png', dpi=dpi)
