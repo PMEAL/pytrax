@@ -33,5 +33,10 @@ setup(
                       'tqdm'],
     author='Tom Tranter',
     author_email='t.g.tranter@gmail.com',
-    url='http://pytrax.readthedocs.org'
+    url='https://pytrax.readthedocs.io/en/latest/',
+    project_urls={
+        'Documentation': 'https://pytrax.readthedocs.io/en/latest/',
+        'Source': 'https://github.com/PMEAL/pytrax',
+        'Tracker': 'https://github.com/PMEAL/pytrax/issues',
+    },
 )
