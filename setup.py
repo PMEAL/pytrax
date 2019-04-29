@@ -29,7 +29,6 @@ setup(
     install_requires=['numpy',
                       'scipy',
                       'matplotlib',
-                      'porespy',
                       'tqdm'],
     author='Tom Tranter',
     author_email='t.g.tranter@gmail.com',
