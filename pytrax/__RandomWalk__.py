@@ -9,7 +9,6 @@ Random Walker Code
 import numpy as np
 import matplotlib
 import matplotlib.pyplot as plt
-import porespy as ps
 from tqdm import tqdm
 import os
 import time
