@@ -13,12 +13,12 @@ import urllib.request as ur
 from io import BytesIO
 from PIL import Image
 
-save_figures = False
-global_stride = None
+save_figures = True
+global_stride = 1
 plt.close('all')
 if __name__ == '__main__':
     # Change number to run different example of include many in list
-    for image_run in [5]:
+    for image_run in range(5):
         if image_run == 0:
             # Open space
             im = np.ones([3, 3], dtype=np.uint8)
@@ -70,7 +70,7 @@ if __name__ == '__main__':
             np.random.seed(1)
             im = ps.generators.cylinders([300, 300, 300],
                                          radius=10,
-                                         nfibers=100,
+                                         ncylinders=100,
                                          phi_max=90,
                                          theta_max=90).astype(np.uint8)
             fname = 'random_cylinders_'
@@ -81,7 +81,7 @@ if __name__ == '__main__':
             np.random.seed(1)
             im = ps.generators.cylinders([300, 300, 300],
                                          radius=10,
-                                         nfibers=100,
+                                         ncylinders=100,
                                          phi_max=90,
                                          theta_max=0).astype(np.uint8)
             fname = 'aligned_cylinders_'
@@ -102,7 +102,7 @@ if __name__ == '__main__':
         rw.plot_msd()
         dpi = 600
         if save_figures:
-            rw._save_fig(fname+'msd.png')
+            rw._save_fig(fname+'msd.png', dpi=dpi)
         if rw.dim == 2:
             # Plot the longest walk
             rw.plot_walk_2d(w_id=np.argmax(rw.sq_disp[-1, :]), data='t')
@@ -117,10 +117,3 @@ if __name__ == '__main__':
             if save_figures:
                 # export to paraview
                 rw.export_walk(image=rw.im, sample=1)
-        nstrides = np.shape(rw.real_coords)[0]-1
-        steps = [np.int(np.floor(nstrides*i/4)) for i in np.arange(0, 5, 1)]
-        for step in steps:
-            rw.axial_density_plot(time=step, bins=50)
-            plt.title('Timestep: '+str(step*stride))
-            if save_figures:
-                rw._save_fig(fname+'density_'+str(step*stride)+'.png', dpi=dpi)

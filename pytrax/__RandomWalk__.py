@@ -545,10 +545,10 @@ class RandomWalk():
             porous = porous.astype(float)
             porous[np.where(porous == 0)] = np.nan
             plt.imshow(big_im, cmap=cmap)
-            # Make Solid Black
-#            plt.imshow(solid, cmap='binary', vmin=0, vmax=1)
-            # Make Untouched Porous White
-#            plt.imshow(porous, cmap='gist_gray', vmin=0, vmax=1)
+#             Make Solid Black
+            plt.imshow(solid, cmap='binary', vmin=0, vmax=1)
+#             Make Untouched Porous White
+            plt.imshow(porous, cmap='gist_gray', vmin=0, vmax=1)
             if check_solid:
                 print('Solid pixel match?', sb == sa, sb, sa)
 
