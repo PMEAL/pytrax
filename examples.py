@@ -4,7 +4,13 @@ Created on Thu Dec  7 23:40:31 2017
 Run the RandomWalk Examples
 @author: Precision
 """
-import porespy as ps
+try:
+    import porespy as ps
+except ImportError:
+    print('PoreSpy must be installed for the examples. ' +
+          'Use pip or conda to install it')
+    raise
+
 import pytrax as pt
 import time
 import numpy as np
