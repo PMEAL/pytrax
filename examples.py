@@ -2,7 +2,7 @@
 """
 Created on Thu Dec  7 23:40:31 2017
 Run the RandomWalk Examples
-@author: Precision
+@author: Tom Tranter
 """
 try:
     import porespy as ps
