@@ -210,6 +210,24 @@ class RandomWalk():
             walkers = np.tile(w, (self.nw, 1))
         return walkers
 
+    def get_probable_cancels(self, walkers):
+        r'''
+        If the image is grey scale and has been normalized with values ranging
+        between 0.0 and 1.0 where the fractional value in each pixel represents
+        a fraction of space that is void we can moderate the walker movements
+        so that walkers in higher void space fractions have a higher chance of
+        moving on.
+        '''
+        random_cancel = np.random.random(len(walkers))
+        if self.dim == 2:
+            greys = self.im[walkers[:, 0],
+                            walkers[:, 1]]
+        elif self.dim == 3:
+            greys = self.im[walkers[:, 0],
+                            walkers[:, 1],
+                            walkers[:, 2]]
+        return greys < random_cancel
+
     def _run_walk(self, walkers):
         r'''
         Run the walk in self contained way to enable parallel processing for
@@ -245,6 +263,12 @@ class RandomWalk():
             if np.any(wall_hit):
                 m[wall_hit] = 0
                 mr[wall_hit] = 0
+            # Check that the move out of the current voxel is ok based on the
+            # Grey scale of the image
+            cancels = self.get_probable_cancels(walkers)
+            if np.any(cancels):
+                m[cancels] = 0
+                mr[cancels] = 0
             # Reflected velocity in real direction
             wr += mr*real
             walkers += m
@@ -435,9 +459,9 @@ class RandomWalk():
         num_copies: int
             the number of times to copy the image along each axis
         '''
-        big_im = self.im.copy()
+        big_im = self.im != self.solid_value
         func = [np.vstack, np.hstack, np.dstack]
-        temp_im = self.im.copy()
+        temp_im = big_im.copy()
         for ax in tqdm(range(self.dim), desc='building big image'):
             flip_im = np.flip(temp_im, ax)
             for c in range(num_copies):
@@ -541,7 +565,8 @@ class RandomWalk():
             solid = big_im == self.solid_value-2
             solid = solid.astype(float)
             solid[np.where(solid == 0)] = np.nan
-            porous = big_im == self.solid_value-1
+#            porous = big_im == self.solid_value-1
+            porous = big_im == -1
             porous = porous.astype(float)
             porous[np.where(porous == 0)] = np.nan
             plt.imshow(big_im, cmap=cmap)
