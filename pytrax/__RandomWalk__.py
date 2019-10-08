@@ -71,6 +71,7 @@ class RandomWalk():
         self.seed = seed
         self._get_wall_map(self.im)
         self.data = {}
+        self.do_grey = np.any((self.im > 0) * (self.im < 1.0))
 
     def _rand_start(self, image, num=1):
         r'''
@@ -265,10 +266,11 @@ class RandomWalk():
                 mr[wall_hit] = 0
             # Check that the move out of the current voxel is ok based on the
             # Grey scale of the image
-            cancels = self.get_probable_cancels(walkers)
-            if np.any(cancels):
-                m[cancels] = 0
-                mr[cancels] = 0
+            if self.do_grey:
+                cancels = self.get_probable_cancels(walkers)
+                if np.any(cancels):
+                    m[cancels] = 0
+                    mr[cancels] = 0
             # Reflected velocity in real direction
             wr += mr*real
             walkers += m
@@ -459,7 +461,7 @@ class RandomWalk():
         num_copies: int
             the number of times to copy the image along each axis
         '''
-        big_im = self.im != self.solid_value
+        big_im = self.im
         func = [np.vstack, np.hstack, np.dstack]
         temp_im = big_im.copy()
         for ax in tqdm(range(self.dim), desc='building big image'):
@@ -558,22 +560,17 @@ class RandomWalk():
             if not hasattr(self, 'im_big'):
                 self.im_big = self._build_big_image(offset)
             sb = np.sum(self.im_big == self.solid_value)
-            big_im = self._fill_im_big(w_id=w_id, data=data).astype(int)
+            big_im = self._fill_im_big(w_id=w_id, data=data).astype(float)
             sa = np.sum(big_im == self.solid_value - 2)
             fig, ax = plt.subplots(figsize=[6, 6])
             ax.set(aspect=1)
-            solid = big_im == self.solid_value-2
-            solid = solid.astype(float)
-            solid[np.where(solid == 0)] = np.nan
-#            porous = big_im == self.solid_value-1
-            porous = big_im == -1
-            porous = porous.astype(float)
-            porous[np.where(porous == 0)] = np.nan
+            plt.imshow(np.ones_like(self.im_big), cmap='bwr', vmin=0, vmax=1)
+            grey = self.im_big.copy().astype(float)
+            grey[grey == 0] = np.nan
+            big_im[big_im < 0] = np.nan
+            plt.imshow(grey, cmap='gist_gray', vmin=0, vmax=1)
             plt.imshow(big_im, cmap=cmap)
-#             Make Solid Black
-            plt.imshow(solid, cmap='binary', vmin=0, vmax=1)
-#             Make Untouched Porous White
-            plt.imshow(porous, cmap='gist_gray', vmin=0, vmax=1)
+
             if check_solid:
                 print('Solid pixel match?', sb == sa, sb, sa)
 
