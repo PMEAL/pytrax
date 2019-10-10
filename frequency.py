@@ -13,8 +13,7 @@ import scipy.ndimage as spim
 import time
 
 plt.close('all')
-if __name__ == '__main__':
-    st = time.time()
+def main():
     im = ps.generators.blobs(shape=[1000, 1000], blobiness=3, porosity=0.5)
     im = ps.filters.fill_blind_pores(im).astype(np.int)
     dt = spim.distance_transform_edt(im)
@@ -62,11 +61,15 @@ if __name__ == '__main__':
             x_last = x
             y_last = y
             z_last = z
-    
+    return grey, freq
+
+if __name__ == '__main__':
+    st = time.time()
+    grey, freq = main()
     some_hits = freq[freq > 0]
     frange = np.unique(some_hits)
     plt.figure()
-    plt.hist(some_hits, bins=100)
+    plt.hist(some_hits, bins=int(frange.max()-frange.min()))
     log_freq = np.log(freq)
     log_freq[freq == 0] = np.nan
     freq[freq == 0] = np.nan
