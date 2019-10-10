@@ -10,15 +10,19 @@ import pytrax as pt
 import numpy as np
 import matplotlib.pyplot as plt
 import scipy.ndimage as spim
+import time
+
 plt.close('all')
 if __name__ == '__main__':
-    im = ps.generators.blobs(shape=[1000, 1000], porosity=0.7).astype(np.int)
+    st = time.time()
+    im = ps.generators.blobs(shape=[1000, 1000], blobiness=3, porosity=0.5)
+    im = ps.filters.fill_blind_pores(im).astype(np.int)
     dt = spim.distance_transform_edt(im)
     grey = dt.copy()/dt.max()
     grey = np.pad(grey, 1, mode='constant', constant_values=0)
     # Number of time steps and walkers
-    num_t = 10000
-    num_w = 10000
+    num_t = 100000
+    num_w = 1000
     stride = 1
     
     rw = pt.RandomWalk(grey, seed=False)
@@ -28,19 +32,36 @@ if __name__ == '__main__':
     rw.plot_walk_2d()
     
     print('Calculating hit frequency')
-    coords = rw.real_coords + 1
+    coords = rw.real_coords
     freq = np.zeros_like(grey)
     if len(im.shape) == 2:
+        x_last = coords[0, :, 0].fill(-1)
+        y_last = coords[0, :, 1].fill(-1)
         for t in range(coords.shape[0]):
             x = coords[t, :, 0]
             y = coords[t, :, 1]
-            freq[x, y] += 1
+            same_x = x == x_last
+            same_y = y == y_last
+            same_xy = same_x * same_y
+            freq[x[~same_xy], y[~same_xy]] += 1
+            x_last = x
+            y_last = y
     else:
+        x_last = coords[0, :, 0].fill(-1)
+        y_last = coords[0, :, 1].fill(-1)
+        z_last = coords[0, :, 2].fill(-1)
         for t in range(coords.shape[0]):
             x = coords[t, :, 0]
             y = coords[t, :, 1]
             z = coords[t, :, 2]
-            freq[x, y, z] += 1
+            same_x = x == x_last
+            same_y = y == y_last
+            same_z = z == z_last
+            same_xyz = same_x * same_y * same_z
+            freq[x[~same_xyz], y[~same_xyz], z[~same_xyz]] += 1
+            x_last = x
+            y_last = y
+            z_last = z
     
     some_hits = freq[freq > 0]
     frange = np.unique(some_hits)
@@ -48,10 +69,14 @@ if __name__ == '__main__':
     plt.hist(some_hits, bins=100)
     log_freq = np.log(freq)
     log_freq[freq == 0] = np.nan
-    print(frange.min(), frange.max(), log_freq[freq > 0].min(), log_freq[freq > 0].max())
+    freq[freq == 0] = np.nan
+    print(frange.min(), frange.max())
+    plt.figure()
+    plt.imshow(grey > 0, cmap='gist_gray')
+    plt.imshow(freq)
+    plt.colorbar()
     plt.figure()
     plt.imshow(grey > 0, cmap='gist_gray')
     plt.imshow(log_freq)
     plt.colorbar()
-    
-        
+    print('Sim time', time.time() - st)
