@@ -127,10 +127,8 @@ class RandomWalk():
     def check_wall(self, walkers, move):
         r'''
         The walkers are an array of coordinates of the image,
-        the wall map is a boolean map of the image rolled in each direction.
-        directions is an array referring to the movement up or down an axis
-        and is used to increment the walker coordinates if a wall is not met
-
+        move is the vector of their next movement, if a wall is not met
+        or the chance of entering a grey value is met then False is returned
         Parameters
         ----------
         walkers: ndarray of int and shape [nw, dim]
@@ -141,14 +139,7 @@ class RandomWalk():
             the index of the wall map corresponding to the move vector
         '''
         next_move = walkers + move
-        if self.dim == 2:
-            move_ok = self.wall_map[next_move[:, 0],
-                                    next_move[:, 1]]
-        elif self.dim == 3:
-            move_ok = self.wall_map[next_move[:, 0],
-                                    next_move[:, 1],
-                                    next_move[:, 2]]
-        return ~move_ok
+        return self.get_probable_cancels(next_move)
 
     def check_edge(self, walkers, axis, move, real):
         r'''

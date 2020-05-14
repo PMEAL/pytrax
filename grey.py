@@ -21,7 +21,7 @@ if __name__ == '__main__':
     
     for case in [im, grey]:
         rw = pt.RandomWalk(case, seed=False)
-        rw.run(num_t, num_w, same_start=False, stride=stride, num_proc=8)
+        rw.run(num_t, num_w, same_start=False, stride=stride, num_proc=10)
         # Plot mean square displacement
         rw.plot_msd()
         rw.plot_walk_2d()
