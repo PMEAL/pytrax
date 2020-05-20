@@ -139,7 +139,14 @@ class RandomWalk():
             the index of the wall map corresponding to the move vector
         '''
         next_move = walkers + move
-        return self.get_probable_cancels(next_move)
+        if self.dim == 2:
+            move_ok = self.wall_map[next_move[:, 0],
+                                    next_move[:, 1]]
+        elif self.dim == 3:
+            move_ok = self.wall_map[next_move[:, 0],
+                                    next_move[:, 1],
+                                    next_move[:, 2]]
+        return ~move_ok
 
     def check_edge(self, walkers, axis, move, real):
         r'''
@@ -202,7 +209,7 @@ class RandomWalk():
             walkers = np.tile(w, (self.nw, 1))
         return walkers
 
-    def get_probable_cancels(self, walkers):
+    def get_probable_cancels(self, walkers, move, mode='combi'):
         r'''
         If the image is grey scale and has been normalized with values ranging
         between 0.0 and 1.0 where the fractional value in each pixel represents
@@ -210,15 +217,29 @@ class RandomWalk():
         so that walkers in higher void space fractions have a higher chance of
         moving on.
         '''
+        next_move = walkers + move
         random_cancel = np.random.random(len(walkers))
         if self.dim == 2:
             greys = self.im[walkers[:, 0],
                             walkers[:, 1]]
+            ngreys = self.im[next_move[:, 0],
+                             next_move[:, 1]]
         elif self.dim == 3:
             greys = self.im[walkers[:, 0],
                             walkers[:, 1],
                             walkers[:, 2]]
-        return greys < random_cancel
+            ngreys = self.im[next_move[:, 0],
+                             next_move[:, 1],
+                             next_move[:, 2]]
+        combi = 2*(greys*ngreys)/(greys + ngreys)
+        if mode == 'combi':
+            return combi < random_cancel
+        elif mode == 'current':
+            return greys < random_cancel
+        elif mode == 'next':
+            return ngreys < random_cancel
+        else:
+            return combi < random_cancel
 
     def _run_walk(self, walkers):
         r'''
@@ -258,7 +279,7 @@ class RandomWalk():
             # Check that the move out of the current voxel is ok based on the
             # Grey scale of the image
             if self.do_grey:
-                cancels = self.get_probable_cancels(walkers)
+                cancels = self.get_probable_cancels(walkers, m, 'combi')
                 if np.any(cancels):
                     m[cancels] = 0
                     mr[cancels] = 0
@@ -320,7 +341,7 @@ class RandomWalk():
         else:
             # Run in serial
             real_coords = np.asarray(self._run_walk(walkers.tolist()))
-
+        self._walkers = walkers
         self.real_coords = real_coords
 
     def _chunk_walkers(self, walkers, num_chunks):
