@@ -192,7 +192,7 @@ class RandomWalk():
 
         return move, move_real, real
 
-    def _get_starts(self, same_start=False):
+    def _get_starts(self, same_start=False, max_iter=100):
         r'''
         Start walkers in the pore space at random location
         same_start starts all the walkers at the same spot if True and at
@@ -203,7 +203,7 @@ class RandomWalk():
             determines whether to start all the walkers at the same coordinate
         '''
         if not same_start:
-            walkers = self._rand_start(self.im, num=self.nw)
+            walkers = self._rand_start(self.im, num=self.nw)           
         else:
             w = self._rand_start(self.im, num=1).flatten()
             walkers = np.tile(w, (self.nw, 1))
@@ -255,6 +255,7 @@ class RandomWalk():
         real = np.ones_like(walkers)
 #        real_coords = np.ndarray([self.nt, nw, self.dim], dtype=int)
         real_coords = []
+        real_coords.append(wr.copy())
         for t in range(self.nt):
             # Random velocity update
             # Randomly select an axis to move along for each walker
@@ -301,7 +302,8 @@ class RandomWalk():
         nt: int (default = 1000)
             the number of timesteps to run the simulation for
         nw: int (default = 1)
-            he vector of the next move to be made by the walker
+            the number of walkers to run in the simulation - None will start 1
+            walker in every non-zero pixel of the image
         same_start: bool
             determines whether to start all the walkers at the same coordinate
         stride: int
@@ -312,11 +314,16 @@ class RandomWalk():
             multiprocessing.
         '''
         self.nt = int(nt)
-        self.nw = int(nw)
+        
         self.stride = stride
-        record_t = int(self.nt/stride)
+        record_t = int(self.nt/stride)+1
         # Get starts
-        walkers = self._get_starts(same_start)
+        if nw is not None:
+            self.nw = int(nw)
+            walkers = self._get_starts(same_start)
+        else:
+            walkers = np.argwhere(self.im > 0.0)
+            self.nw = walkers.shape[0]
         if self.seed:
             # Generate a seed for each timestep
             np.random.seed(1)
@@ -388,7 +395,7 @@ class RandomWalk():
         self.data = {}
         fig, ax = plt.subplots(figsize=[6, 6])
         ax.set(aspect=1, xlim=(0, self.nt), ylim=(0, self.nt))
-        x = np.arange(0, self.nt, self.stride)[:, np.newaxis]
+        x = np.arange(0, self.nt+1, self.stride)[:, np.newaxis]
         plt.plot(x, self.msd, 'k-', label='msd')
         print('#'*30)
         print('Square Displacement:')
@@ -663,3 +670,14 @@ class RandomWalk():
                         header_written = True
                     w.writerow(self.data)
                     gc.collect()
+
+    def colour_sq_disp(self):
+        starts = self.real_coords[0, :, :]
+        self.im_sq_disp = self.im.copy().astype(int)
+        if self.dim == 3:
+            self.im_sq_disp[starts[:, 0],
+                            starts[:, 1],
+                            starts[:, 2]] = self.sq_disp[-1, :]
+        else:
+            self.im_sq_disp[starts[:, 0],
+                            starts[:, 1]] = self.sq_disp[-1, :]
