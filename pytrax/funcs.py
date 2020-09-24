@@ -8,14 +8,11 @@ def new_vector(im, N=1):
     # Generate random theta and phi for each walker
     q, f = np.vstack(np.random.rand(2, N)*2*np.pi)  # in Radians
     if im.ndim == 2:
-        f = 0
+        f = np.zeros([N, ])
     # Convert to axial components of a unit vector displacement
-    rand_sign = np.random.randint(0, 2, N)*2 - 1
-    z = np.abs(np.sin(f))*rand_sign
-    rand_sign = np.random.randint(0, 2, N)*2 - 1
-    y = np.abs(np.cos(f)*np.sin(q))*rand_sign
-    rand_sign = np.random.randint(0, 2, N)*2 - 1
-    x = np.abs(np.cos(f)*np.cos(q))*rand_sign
+    z = np.sin(f)
+    y = np.cos(f)*np.sin(q)
+    x = np.cos(f)*np.cos(q)
     return x, y, z
 
 
@@ -73,5 +70,7 @@ while i < n_steps:
         im_path[tuple(np.around(loc).astype(int))] += 1
         # Increment the step index
         i += 1
+# %%
 # Show the image of walkers
-plt.imshow(np.log10(im_path+0.1)/im, origin='xy')
+plt.imshow(np.log10(im_path+1)/im, origin='xy', cmap=plt.cm.twilight_r)
+plt.axis('off')
