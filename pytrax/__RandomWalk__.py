@@ -222,6 +222,9 @@ class RandomWalk():
         # Array to keep track of whether the walker is travelling in a real
         # or reflected image in each axis
         real = np.ones_like(walkers)
+        mfp_start = walkers.copy()
+        ax = np.random.randint(0, self.dim, nw)
+        pn = np.random.randint(0, 2, nw)
 #        real_coords = np.ndarray([self.nt, nw, self.dim], dtype=int)
         real_coords = []
         for t in range(self.nt):
@@ -229,11 +232,18 @@ class RandomWalk():
             # Randomly select an axis to move along for each walker
             if self.seed:
                 np.random.seed(self.seeds[t])
-            ax = np.random.randint(0, self.dim, nw)
+            ax_new = np.random.randint(0, self.dim, nw)
             # Randomly select a direction positive = 1, negative = 0 index
             if self.seed:
                 np.random.seed(self.seeds[-t])
-            pn = np.random.randint(0, 2, nw)
+            pn_new = np.random.randint(0, 2, nw)
+            # Check if mean free path reached
+            mfp_check = np.sum((walkers-mfp_start)**2, axis=1) >= self.mfp_sq
+            if np.any(mfp_check):
+                # reset mfp start and pick new random direction
+                mfp_start[mfp_check] = walkers[mfp_check]
+                ax[mfp_check] = ax_new[mfp_check]
+                pn[mfp_check] = pn_new[mfp_check]
             # Get the movement
             m = self.moves[ax, pn]
             # Reflected velocity (if edge is hit)
@@ -245,6 +255,9 @@ class RandomWalk():
             if np.any(wall_hit):
                 m[wall_hit] = 0
                 mr[wall_hit] = 0
+                mfp_start[wall_hit] = walkers[wall_hit]
+                ax[wall_hit] = ax_new[wall_hit]
+                pn[wall_hit] = pn_new[wall_hit]
             # Reflected velocity in real direction
             wr += mr*real
             walkers += m
@@ -252,7 +265,7 @@ class RandomWalk():
                 real_coords.append(wr.copy())
         return real_coords
 
-    def run(self, nt=1000, nw=1, same_start=False, stride=1, num_proc=1):
+    def run(self, nt=1000, nw=1, same_start=False, stride=1, num_proc=1, mean_free_path=1):
         r'''
         Main run loop over nt timesteps and nw walkers.
         same_start starts all the walkers at the same spot if True and at
@@ -272,10 +285,15 @@ class RandomWalk():
             number of concurrent processes to start running. Please make sure
             that the run method is c a __main__ method when using
             multiprocessing.
+        mean_free_path: int (default 1)
+            length of mean free path (in pixels). Walkers will continue in a
+            fixed direction until mfp is reached or a wall is hit and then the
+            direction is randomly chosen again
         '''
         self.nt = int(nt)
         self.nw = int(nw)
         self.stride = stride
+        self.mfp_sq = mean_free_path**2
         record_t = int(self.nt/stride)
         # Get starts
         walkers = self._get_starts(same_start)

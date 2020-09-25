@@ -72,5 +72,6 @@ while i < n_steps:
         i += 1
 # %%
 # Show the image of walkers
+plt.figure()
 plt.imshow(np.log10(im_path+1)/im, origin='xy', cmap=plt.cm.twilight_r)
 plt.axis('off')
