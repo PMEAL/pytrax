@@ -210,6 +210,64 @@ class RandomWalk():
             walkers = np.tile(w, (self.nw, 1))
         return walkers
 
+    def _new_vector(self, nw=1):
+        # Generate random theta and phi for each walker
+        q, f = np.vstack(np.random.rand(2, nw)*2*np.pi)  # in Radians
+        if self.dim == 2:
+            f = np.zeros([nw, ])
+        # Convert to axial components of a unit vector displacement
+        z = np.sin(f)
+        y = np.cos(f)*np.sin(q)
+        x = np.cos(f)*np.cos(q)
+        v = np.vstack((x, y, z)).T
+        if self.dim == 2:
+            v_abs_min = np.min(np.abs(v[:, :2]), axis=1)
+        else:
+            v_abs_min = np.min(np.abs(v[:, :2]), axis=1)
+        v_min_one = np.around(v/np.tile(v_abs_min[:, np.newaxis], 3), 0).astype(int)
+        return v_min_one
+    
+    
+    def _choose_orthogonal_step(self, v):
+        r'''
+        decomposes vector into sequence of orthogonal steps and picks one at random
+        e.g. [1, -2, 3] is composed of 6 steps
+        [1, 0, 0] + [0, -1, 0] + [0, -1, 0] + [0, 0, 1] + [0, 0, 1] + [0, 0, 1]
+        choosing step 5 at random returns pn = 1 (positive) and ax = 2 i.e. z-dir
+        Parameters
+        ----------
+        v : ndarray [nw, 3]
+            direction of travel for each walker.
+    
+        Returns
+        -------
+        v_pn : array [nw, 1]
+            orthogonal movement is positive or negative.
+        v_ax : array [nw, 1]
+            orthogonal movement is along this axis
+    
+        '''
+        nw = np.shape(v)[0]
+        # is direction along each axis positive or negative
+        v_sign = np.sign(v)
+        v_sign[v_sign < 0] = 0
+        # Absolute magnitude
+        v_abs = np.abs(v)
+        # Sum of orthogonal steps up to x, x&y, all
+        v_sum_x = v_abs[:, 0]
+        v_sum_xy = np.sum(v_abs[:, :2], axis=1)
+        v_sum_xyz = np.sum(v_abs[:, :3], axis=1)
+        # Pick a random orthogoanl step 
+        v_choice = np.random.randint(low=np.zeros(nw, dtype=int),
+                                     high=v_sum_xyz, size=nw)
+        # Assign the axis based on which range the choice falls in
+        v_ax = np.ones(nw, dtype=int)*2
+        v_ax[v_choice <= v_sum_x] = 0
+        v_ax[(v_choice > v_sum_x) * (v_choice <= v_sum_xy)] = 1
+        # Lookup pn using the axis
+        v_pn = v_sign[np.arange(0, nw), v_ax]
+        return v_ax, v_pn
+
     def _run_walk(self, walkers):
         r'''
         Run the walk in self contained way to enable parallel processing for
@@ -223,27 +281,21 @@ class RandomWalk():
         # or reflected image in each axis
         real = np.ones_like(walkers)
         mfp_start = walkers.copy()
-        ax = np.random.randint(0, self.dim, nw)
-        pn = np.random.randint(0, 2, nw)
+        directions = self._new_vector(nw)
+        # ax = np.random.randint(0, self.dim, nw)
+        # pn = np.random.randint(0, 2, nw)
+        
 #        real_coords = np.ndarray([self.nt, nw, self.dim], dtype=int)
         real_coords = []
         for t in range(self.nt):
             # Random velocity update
-            # Randomly select an axis to move along for each walker
-            if self.seed:
-                np.random.seed(self.seeds[t])
-            ax_new = np.random.randint(0, self.dim, nw)
-            # Randomly select a direction positive = 1, negative = 0 index
-            if self.seed:
-                np.random.seed(self.seeds[-t])
-            pn_new = np.random.randint(0, 2, nw)
+            ax, pn = self._choose_orthogonal_step(directions)
             # Check if mean free path reached
             mfp_check = np.sum((walkers-mfp_start)**2, axis=1) >= self.mfp_sq
             if np.any(mfp_check):
                 # reset mfp start and pick new random direction
                 mfp_start[mfp_check] = walkers[mfp_check]
-                ax[mfp_check] = ax_new[mfp_check]
-                pn[mfp_check] = pn_new[mfp_check]
+                directions[mfp_check] = self._new_vector(np.sum(mfp_check))
             # Get the movement
             m = self.moves[ax, pn]
             # Reflected velocity (if edge is hit)
@@ -256,8 +308,7 @@ class RandomWalk():
                 m[wall_hit] = 0
                 mr[wall_hit] = 0
                 mfp_start[wall_hit] = walkers[wall_hit]
-                ax[wall_hit] = ax_new[wall_hit]
-                pn[wall_hit] = pn_new[wall_hit]
+                directions[wall_hit] = self._new_vector(np.sum(wall_hit))
             # Reflected velocity in real direction
             wr += mr*real
             walkers += m
