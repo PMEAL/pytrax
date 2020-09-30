@@ -25,6 +25,10 @@ def get_start_point(im, N=1):
     points = np.array([options[i][inds] for i in range(im.ndim)])
     return points
 
+def check_locations(loc, shape):
+    # do modulus of locs, to get remainders and update loc
+    return tuple(np.around(loc).astype(int))
+
 
 # %% Generate image
 im = ps.generators.overlapping_spheres(shape=[400, 800], radius=10, porosity=0.9)
@@ -34,7 +38,7 @@ im[bd] = False
 # %% Specify settings for walkers
 n_walkers = 5
 n_steps = 10000
-mean_free_path = 2
+mean_free_path = 20
 
 # %% Run walk
 # Initialize arrays to store results, one image and one complete table
@@ -49,7 +53,8 @@ while i < n_steps:
     # Determine trial location of each walker
     new_loc = loc + np.array([x, y])
     # Check trial step for each walker
-    check_1 = im[tuple(np.around(new_loc).astype(int))] == False
+    # check_1 = im[tuple(np.around(new_loc).astype(int))] == False
+    check_1 = im[check_locations(new_loc, im.shape)] == False
     check_2 = np.sqrt(np.sum((new_loc-start)**2, axis=0)) >= mean_free_path
     # If either check found an invalid move, address it
     if np.any(check_1) or np.any(check_2):
