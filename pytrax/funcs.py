@@ -25,20 +25,22 @@ def get_start_point(im, N=1):
     points = np.array([options[i][inds] for i in range(im.ndim)])
     return points
 
+
 def check_locations(loc, shape):
-    # do modulus of locs, to get remainders and update loc
+    # Periodic BC using modulus of loc
+    # no need to put a check since 250%400 is 250 only
+    loc[0] = loc[0] % (shape[0] - 1)
+    loc[1] = loc[1] % (shape[1] - 1)
     return tuple(np.around(loc).astype(int))
 
 
 # %% Generate image
-im = ps.generators.overlapping_spheres(shape=[400, 800], radius=10, porosity=0.9)
-bd = ps.tools.get_border(im.shape, thickness=3, mode='faces')
-im[bd] = False
+im = ps.generators.overlapping_spheres(shape=[500, 1000], radius=5, porosity=0.9)
 
 # %% Specify settings for walkers
-n_walkers = 5
+n_walkers = 50
 n_steps = 10000
-mean_free_path = 20
+mean_free_path = 5
 
 # %% Run walk
 # Initialize arrays to store results, one image and one complete table
@@ -79,4 +81,4 @@ while i < n_steps:
 # Show the image of walkers
 plt.figure()
 plt.imshow(np.log10(im_path+1)/im, origin='xy', cmap=plt.cm.twilight_r)
-plt.axis('off')
+# plt.imshow(np.log10(im_path+0.1)/im, origin='xy')
