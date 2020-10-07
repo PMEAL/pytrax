@@ -2,6 +2,7 @@
 import numpy as np
 import porespy as ps
 import matplotlib.pyplot as plt
+import imageio
 
 
 def new_vector(im, N=1):
@@ -31,6 +32,8 @@ def check_locations(loc, shape):
     # no need to put a check since 250%400 is 250 only
     loc[0] = loc[0] % (shape[0] - 1)
     loc[1] = loc[1] % (shape[1] - 1)
+    if im.ndim == 3:
+        loc[2] = loc[2] % (shape[2]-1)
     return tuple(np.around(loc).astype(int))
 
 
@@ -53,7 +56,10 @@ loc = np.copy(start)
 i = 0
 while i < n_steps:
     # Determine trial location of each walker
-    new_loc = loc + np.array([x, y])
+    if im.ndim == 3:
+        new_loc = loc + np.array([x,y,z])
+    else:
+        new_loc = loc + np.array([x, y])
     # Check trial step for each walker
     # check_1 = im[tuple(np.around(new_loc).astype(int))] == False
     check_1 = im[check_locations(new_loc, im.shape)] == False
@@ -81,4 +87,5 @@ while i < n_steps:
 # Show the image of walkers
 plt.figure()
 plt.imshow(np.log10(im_path+1)/im, origin='xy', cmap=plt.cm.twilight_r)
+# imageio.volsave('Random_walk_3d.tif', (np.log10(im_path+0.1)/im).astype(int))
 # plt.imshow(np.log10(im_path+0.1)/im, origin='xy')
