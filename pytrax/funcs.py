@@ -34,16 +34,24 @@ def check_locations(loc, shape):
     loc[1] = loc[1] % (shape[1] - 1)
     if im.ndim == 3:
         loc[2] = loc[2] % (shape[2]-1)
+    print(loc)
     return tuple(np.around(loc).astype(int))
 
+def calculate_msd(path):
+    disp = path[:, :, :] - path[0, :, :]
+    asd = disp**2
+    sq_disp = np.sum(disp**2, axis=2)
+    msd = np.mean(sq_disp, axis=1)
+    axial_msd = np.mean(asd, axis=1)
+    return msd, axial_msd
 
 # %% Generate image
-im = ps.generators.overlapping_spheres(shape=[500, 1000], radius=5, porosity=0.9)
+im = ps.generators.overlapping_spheres(shape=[50, 100], radius=5 , porosity=0.9)
 
 # %% Specify settings for walkers
-n_walkers = 50
-n_steps = 10000
-mean_free_path = 5
+n_walkers = 1
+n_steps = 100
+mean_free_path = 500
 
 # %% Run walk
 # Initialize arrays to store results, one image and one complete table
@@ -89,3 +97,6 @@ plt.figure()
 plt.imshow(np.log10(im_path+1)/im, origin='xy', cmap=plt.cm.twilight_r)
 # imageio.volsave('Random_walk_3d.tif', (np.log10(im_path+0.1)/im).astype(int))
 # plt.imshow(np.log10(im_path+0.1)/im, origin='xy')
+
+# calculate_msd(path)
+#print(calculate_msd(path))
