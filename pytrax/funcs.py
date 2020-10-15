@@ -27,15 +27,15 @@ def get_start_point(im, N=1):
     return points
 
 
-def check_locations(loc, shape):
+def wrap_indices(loc, shape):
     # Periodic BC using modulus of loc
     # no need to put a check since 250%400 is 250 only
-    loc[0] = loc[0] % (shape[0] - 1)
-    loc[1] = loc[1] % (shape[1] - 1)
+    temp = np.copy(loc)
+    temp[0] = np.around(loc[0]) % (shape[0])
+    temp[1] = np.around(loc[1]) % (shape[1])
     if im.ndim == 3:
-        loc[2] = loc[2] % (shape[2]-1)
-    print(loc)
-    return tuple(np.around(loc).astype(int))
+        temp[2] = np.around(loc[2]) % (shape[2])
+    return tuple(temp.astype(int))
 
 def calculate_msd(path):
     disp = path[:, :, :] - path[0, :, :]
@@ -46,12 +46,12 @@ def calculate_msd(path):
     return msd, axial_msd
 
 # %% Generate image
-im = ps.generators.overlapping_spheres(shape=[50, 100], radius=5 , porosity=0.9)
+im = ps.generators.overlapping_spheres(shape=[200, 400], radius=5, porosity=0.99)
 
 # %% Specify settings for walkers
-n_walkers = 1
-n_steps = 100
-mean_free_path = 500
+n_walkers = 100
+n_steps = 2000
+mean_free_path = 100
 
 # %% Run walk
 # Initialize arrays to store results, one image and one complete table
@@ -70,7 +70,10 @@ while i < n_steps:
         new_loc = loc + np.array([x, y])
     # Check trial step for each walker
     # check_1 = im[tuple(np.around(new_loc).astype(int))] == False
-    check_1 = im[check_locations(new_loc, im.shape)] == False
+    temp = wrap_indices(new_loc, im.shape)
+    # if np.any(new_loc.flatten() < 0):
+        # print(np.array(new_loc).flatten(), temp)
+    check_1 = im[temp] == False
     check_2 = np.sqrt(np.sum((new_loc-start)**2, axis=0)) >= mean_free_path
     # If either check found an invalid move, address it
     if np.any(check_1) or np.any(check_2):
@@ -88,15 +91,17 @@ while i < n_steps:
         path[i][:] = np.around(loc).astype(int).T
         # Write walker position into image
         # Only works for few walkers and limited step number
-        im_path[tuple(np.around(loc).astype(int))] += 1
+        im_path[wrap_indices(loc, im.shape)] += 1
         # Increment the step index
         i += 1
 # %%
 # Show the image of walkers
 plt.figure()
-plt.imshow(np.log10(im_path+1)/im, origin='xy', cmap=plt.cm.twilight_r)
+temp = np.log10(im_path+1)/im
+temp = np.tile(temp, [3, 3])
+plt.imshow(temp, origin='xy', cmap=plt.cm.twilight_r)
+plt.axis('tight')
 # imageio.volsave('Random_walk_3d.tif', (np.log10(im_path+0.1)/im).astype(int))
-# plt.imshow(np.log10(im_path+0.1)/im, origin='xy')
 
 # calculate_msd(path)
 #print(calculate_msd(path))
