@@ -37,6 +37,7 @@ def wrap_indices(loc, shape):
         temp[2] = np.around(loc[2]) % (shape[2])
     return tuple(temp.astype(int))
 
+
 def calculate_msd(path):
     disp = path[:, :, :] - path[0, :, :]
     asd = disp**2
@@ -44,6 +45,7 @@ def calculate_msd(path):
     msd = np.mean(sq_disp, axis=1)
     axial_msd = np.mean(asd, axis=1)
     return msd, axial_msd
+
 
 # %% Generate image
 im = ps.generators.overlapping_spheres(shape=[200, 400], radius=5, porosity=0.99)
