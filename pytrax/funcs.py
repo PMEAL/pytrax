@@ -15,7 +15,7 @@ def new_vector(im, N=1):
     z = np.sin(f)
     y = np.cos(f)*np.sin(q)
     x = np.cos(f)*np.cos(q)
-    return x, y, z
+    return np.array((x, y, z))
 
 
 def get_start_point(im, N=1):
@@ -49,12 +49,27 @@ def calculate_msd(path):
 
 
 # %% Generate image
-im = ps.generators.overlapping_spheres(shape=[200, 400], radius=5, porosity=0.99)
+im = ps.generators.overlapping_spheres(shape=[400, 400], radius=10, porosity=0.65)
+im = ps.filters.fill_blind_pores(im)
+bd = ps.tools.get_border(shape=im.shape, mode='faces')
+im = ps.filters.trim_nonpercolating_paths(im, inlets=bd, outlets=bd)
+im = np.ones_like(im)
 
 # %% Specify settings for walkers
 n_walkers = 1000
 n_steps = 5000
-mean_free_path = 10
+mu = 1.73e-5  # Pa.s
+p = 101325  # Pa
+T = 298  # K
+R = 8.314  # J/mol.K
+MW = 0.0291  # kg/mol
+L = mu/p * np.sqrt(np.pi*R*T/(2*MW)) * 1e9  # nm
+res = 6  # nm/voxel
+mfp = L/res  # voxel
+N_Av = 6.022e23  # Avagadro's constant
+k_B = 1.3806e-23  # Boltzmann's constant
+v_rms = np.sqrt(3 * k_B * T / (MW / N_Av)) * 1e9  # nm/s
+
 
 # %% Run walk
 # Initialize arrays to store results, one image and one complete table
@@ -69,13 +84,13 @@ with tqdm(range(n_steps)) as pbar:
     while i < n_steps:
         # Determine trial location of each walker
         if im.ndim == 3:
-            new_loc = loc + np.array([x,y,z])
+            new_loc = loc + np.array([x, y, z])
         else:
             new_loc = loc + np.array([x, y])
         # Check trial step for each walker
         temp = wrap_indices(new_loc, im.shape)
         check_1 = im[temp] == False
-        check_2 = np.sqrt(np.sum((new_loc-start)**2, axis=0)) > mean_free_path
+        check_2 = np.sqrt(np.sum((new_loc-start)**2, axis=0)) > mfp
         # If either check found an invalid move, address it
         if np.any(check_1) or np.any(check_2):
             # Find the walker indices which have invalid moves
@@ -92,7 +107,7 @@ with tqdm(range(n_steps)) as pbar:
             path[i][:] = loc.T
             # Write walker position into image
             # Only works for few walkers and limited step number
-            im_path[wrap_indices(loc, im.shape)] += 1
+            im_path[wrap_indices(loc[:, :], im.shape)] += i
             # Increment the step index
             i += 1
             pbar.update()
@@ -101,20 +116,24 @@ with tqdm(range(n_steps)) as pbar:
 # The following is the distance each walker travels in each step...should
 # be 1.0 everywhere. Will be good for a unit test.
 # d = (path[1:, :, 0] - path[:-1, :, 0])**2 + (path[1:, :, 1] - path[:-1, :, 1])**2
-d = (path[1:, :, 0] - path[0, :, 0])**2 + (path[1:, :, 1] - path[0, :, 1])**2
-s = np.arange(1, n_steps, 10)
-fig = plt.plot(s, d[::10, :].mean(axis=1), '.')
-fig = plt.plot(s, s)
+d = np.sqrt((path[1:, :, 0] - path[0, :, 0])**2 +
+            (path[1:, :, 1] - path[0, :, 1])**2)
+d = d * res * 1e-9  # m
+s = np.sqrt(np.linspace(0, (n_steps) * res/v_rms, n_steps-1))
+fig = plt.plot(s[::10], d[::10, :].mean(axis=1), '.')
+plt.xlabel('sqrt(t) [s]')
+plt.ylabel('Average Displacement [m]')
+
+D = ((d[-1, :] - d[0, :])**2).mean() / (6*n_steps*res/v_rms)
+print(D)
 
 
 # %%
 # Show the image of walkers
-plt.figure()
-temp = np.log10(im_path+1)/im
-temp = np.tile(temp, [3, 3])
-plt.imshow(temp, origin='xy', cmap=plt.cm.twilight_r)
-plt.axis('tight')
+if 0:
+    plt.figure()
+    temp = np.log10(im_path+1)/im
+    temp = np.tile(temp, [3, 3])
+    plt.imshow(temp, origin='xy', cmap=plt.cm.twilight_r, interpolation='none')
+    plt.axis('tight')
 # imageio.volsave('Random_walk_3d.tif', (np.log10(im_path+0.1)/im).astype(int))
-
-# calculate_msd(path)
-#print(calculate_msd(path))
