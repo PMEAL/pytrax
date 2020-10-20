@@ -6,7 +6,7 @@ import imageio
 from tqdm import tqdm
 
 
-def new_vector(im, N=1):
+def new_vector(im, N=1, L=1):
     # Generate random theta and phi for each walker
     q, f = np.vstack(np.random.rand(2, N)*2*np.pi)  # in Radians
     if im.ndim == 2:
@@ -15,7 +15,7 @@ def new_vector(im, N=1):
     z = np.sin(f)
     y = np.cos(f)*np.sin(q)
     x = np.cos(f)*np.cos(q)
-    return np.array((x, y, z))
+    return np.array((x, y, z))*L
 
 
 def get_start_point(im, N=1):
@@ -25,7 +25,7 @@ def get_start_point(im, N=1):
     inds = np.random.randint(0, len(options[0]), N)
     # Convert the chosen list location into an x,y,z index
     points = np.array([options[i][inds] for i in range(im.ndim)])
-    return points
+    return points.astype(float)
 
 
 def wrap_indices(loc, shape):
@@ -53,7 +53,7 @@ im = ps.generators.overlapping_spheres(shape=[400, 400], radius=10, porosity=0.6
 im = ps.filters.fill_blind_pores(im)
 bd = ps.tools.get_border(shape=im.shape, mode='faces')
 im = ps.filters.trim_nonpercolating_paths(im, inlets=bd, outlets=bd)
-im = np.ones_like(im)
+# im = np.ones_like(im)
 
 # %% Specify settings for walkers
 n_walkers = 1000
@@ -64,12 +64,11 @@ T = 298  # K
 R = 8.314  # J/mol.K
 MW = 0.0291  # kg/mol
 L = mu/p * np.sqrt(np.pi*R*T/(2*MW)) * 1e9  # nm
-res = 6  # nm/voxel
+res = 600   # nm/voxel
 mfp = L/res  # voxel
 N_Av = 6.022e23  # Avagadro's constant
 k_B = 1.3806e-23  # Boltzmann's constant
 v_rms = np.sqrt(3 * k_B * T / (MW / N_Av)) * 1e9  # nm/s
-
 
 # %% Run walk
 # Initialize arrays to store results, one image and one complete table
@@ -77,16 +76,13 @@ im_path = np.zeros_like(im, dtype=int)
 path = np.zeros([n_steps, n_walkers, im.ndim])
 # Generate the starting conditions
 start = get_start_point(im, n_walkers)
-x, y, z = new_vector(im, n_walkers)
+x, y, z = new_vector(im, N=n_walkers, L=min(1, mfp))
 loc = np.copy(start)
 i = 0
 with tqdm(range(n_steps)) as pbar:
     while i < n_steps:
         # Determine trial location of each walker
-        if im.ndim == 3:
-            new_loc = loc + np.array([x, y, z])
-        else:
-            new_loc = loc + np.array([x, y])
+        new_loc = loc + np.array([x, y])
         # Check trial step for each walker
         temp = wrap_indices(new_loc, im.shape)
         check_1 = im[temp] == False
@@ -96,9 +92,9 @@ with tqdm(range(n_steps)) as pbar:
             # Find the walker indices which have invalid moves
             inds = np.where((check_1 == True) + (check_2 == True))
             # Regenerate direction vectors for invalid walkers
-            x[inds], y[inds], z[inds] = new_vector(im, len(inds[0]))
+            x[inds], y[inds], z[inds] = new_vector(im, N=len(inds[0]), L=min(1, mfp))
             # Update starting position for invalid walkers to current position
-            start[:, inds] = np.around(loc[:, inds]).astype(int)
+            start[:, inds] = loc[:, inds]
             # The while loop will re-run so this step is ignored
         else:  # If all walkers had a valid step, then execute the walk
             # Update the location of each walker with trial step
@@ -106,8 +102,8 @@ with tqdm(range(n_steps)) as pbar:
             # Record new position of walker in path array
             path[i][:] = loc.T
             # Write walker position into image
-            # Only works for few walkers and limited step number
-            im_path[wrap_indices(loc[:, :], im.shape)] += i
+            # Works best for few walkers and limited step number
+            im_path[wrap_indices(loc[:, :], im.shape)] = i
             # Increment the step index
             i += 1
             pbar.update()
@@ -119,21 +115,22 @@ with tqdm(range(n_steps)) as pbar:
 d = np.sqrt((path[1:, :, 0] - path[0, :, 0])**2 +
             (path[1:, :, 1] - path[0, :, 1])**2)
 d = d * res * 1e-9  # m
-s = np.sqrt(np.linspace(0, (n_steps) * res/v_rms, n_steps-1))
+f = min(1, mfp)
+s = np.sqrt(np.linspace(0, n_steps*f*res/v_rms, n_steps-1))
 fig = plt.plot(s[::10], d[::10, :].mean(axis=1), '.')
 plt.xlabel('sqrt(t) [s]')
 plt.ylabel('Average Displacement [m]')
 
-D = ((d[-1, :] - d[0, :])**2).mean() / (6*n_steps*res/v_rms)
+D = (d[-1, :]**2).mean() / (6*n_steps*f*res/v_rms)
 print(D)
 
 
 # %%
 # Show the image of walkers
-if 0:
+if 1:
     plt.figure()
     temp = np.log10(im_path+1)/im
     temp = np.tile(temp, [3, 3])
-    plt.imshow(temp, origin='xy', cmap=plt.cm.twilight_r, interpolation='none')
+    plt.imshow(temp, origin='xy', cmap=plt.cm.viridis, interpolation='none')
     plt.axis('tight')
 # imageio.volsave('Random_walk_3d.tif', (np.log10(im_path+0.1)/im).astype(int))
