@@ -8,9 +8,12 @@ from tqdm import tqdm
 
 def new_vector(N=1, L=1, ndim=3):
     # Generate random theta and phi for each walker
-    q, f = np.vstack(np.random.rand(2, N)*2*np.pi)  # in Radians
+    u, v = np.vstack(np.random.rand(2, N))
+    q = 2*np.pi*u
+    f = np.arccos(2*v - 1) - np.pi/2
     if ndim == 2:
         f = np.zeros([N, ])
+
     # Convert to axial components of a unit vector displacement
     # Theta (q) is rotation in xy plane
     # Phi (f) is elevation out of xy plane
@@ -52,18 +55,18 @@ def calculate_msd(path):
 
 
 # %% Generate image
-# np.random.seed(0)
+np.random.seed(0)
 # im = ps.generators.overlapping_spheres(shape=[500, 500], radius=8, porosity=0.65)
-# im = ps.generators.blobs(shape=[250, 250, 250], blobiness=1, porosity=0.7)
-# im = ps.filters.fill_blind_pores(im)
-# bd = ps.tools.get_border(shape=im.shape, mode='faces')
-# im = ps.filters.trim_nonpercolating_paths(im, inlets=bd, outlets=bd)
-im = np.ones(shape=[250, 250, 250], dtype=bool)
+im = ps.generators.blobs(shape=[250, 250, 250], blobiness=[1, 2, 3], porosity=0.5)
+im = ps.filters.fill_blind_pores(im)
+bd = ps.tools.get_border(shape=im.shape, mode='faces')
+im = ps.filters.trim_nonpercolating_paths(im, inlets=bd, outlets=bd)
+# im = np.ones(shape=[250, 250, 250], dtype=bool)
 
 # %% Specify settings for walkers
-res = 1000   # nm/voxel
-n_walkers = 1000
-n_steps = 1000
+res = 62   # nm/voxel
+n_walkers = 5000
+n_steps = 5000
 T = 298  # K
 mu = 1.73e-5  # Pa.s
 p = 101325  # Pa
@@ -106,7 +109,6 @@ with tqdm(range(n_steps)) as pbar:
             x[inds], y[inds], z[inds] = new_vector(N=len(inds[0]), L=f, ndim=im.ndim)
             # Update starting position for invalid walkers to current position
             start[:, inds] = loc[:, inds]
-            # The while loop will re-run so this step is ignored
         else:  # If all walkers had a valid step, then execute the walk
             # Update the location of each walker with trial step
             loc = new_loc
@@ -140,6 +142,8 @@ d = d * res * 1e-9  # m
 dx = dx * res * 1e-9  # m
 dy = dy * res * 1e-9  # m
 dz = dz * res * 1e-9  # m
+D = ((d[-1, :])**2).mean() / ((2*im.ndim)*n_steps*f*res/v_rms)
+print(D)
 
 # %%
 A = 2  # Step size to use when making plots
@@ -151,9 +155,7 @@ if im.ndim == 3:
     fig = plt.plot(s[::A], np.mean((dz[::A, :])**2, axis=1)/s[::A]/2, '.')
 plt.xlabel('Time [s]')
 plt.ylabel('Diffusion Coefficient [m\u00b2/s]')
-
-D = ((d[-1, :])**2).mean() / ((2*im.ndim)*n_steps*f*res/v_rms)
-print(D)
+plt.ylim([0, D*2])
 
 
 # %%
