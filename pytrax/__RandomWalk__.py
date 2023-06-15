@@ -71,6 +71,7 @@ class RandomWalk():
         self.seed = seed
         self._get_wall_map(self.im)
         self.data = {}
+        self.do_grey = np.any((self.im > 0) * (self.im < 1.0))
 
     def _rand_start(self, image, num=1):
         r'''
@@ -126,10 +127,8 @@ class RandomWalk():
     def check_wall(self, walkers, move):
         r'''
         The walkers are an array of coordinates of the image,
-        the wall map is a boolean map of the image rolled in each direction.
-        directions is an array referring to the movement up or down an axis
-        and is used to increment the walker coordinates if a wall is not met
-
+        move is the vector of their next movement, if a wall is not met
+        or the chance of entering a grey value is met then False is returned
         Parameters
         ----------
         walkers: ndarray of int and shape [nw, dim]
@@ -193,7 +192,7 @@ class RandomWalk():
 
         return move, move_real, real
 
-    def _get_starts(self, same_start=False):
+    def _get_starts(self, same_start=False, max_iter=100):
         r'''
         Start walkers in the pore space at random location
         same_start starts all the walkers at the same spot if True and at
@@ -204,11 +203,43 @@ class RandomWalk():
             determines whether to start all the walkers at the same coordinate
         '''
         if not same_start:
-            walkers = self._rand_start(self.im, num=self.nw)
+            walkers = self._rand_start(self.im, num=self.nw)           
         else:
             w = self._rand_start(self.im, num=1).flatten()
             walkers = np.tile(w, (self.nw, 1))
         return walkers
+
+    def get_probable_cancels(self, walkers, move, mode='combi'):
+        r'''
+        If the image is grey scale and has been normalized with values ranging
+        between 0.0 and 1.0 where the fractional value in each pixel represents
+        a fraction of space that is void we can moderate the walker movements
+        so that walkers in higher void space fractions have a higher chance of
+        moving on.
+        '''
+        next_move = walkers + move
+        random_cancel = np.random.random(len(walkers))
+        if self.dim == 2:
+            greys = self.im[walkers[:, 0],
+                            walkers[:, 1]]
+            ngreys = self.im[next_move[:, 0],
+                             next_move[:, 1]]
+        elif self.dim == 3:
+            greys = self.im[walkers[:, 0],
+                            walkers[:, 1],
+                            walkers[:, 2]]
+            ngreys = self.im[next_move[:, 0],
+                             next_move[:, 1],
+                             next_move[:, 2]]
+        combi = 2*(greys*ngreys)/(greys + ngreys)
+        if mode == 'combi':
+            return combi < random_cancel
+        elif mode == 'current':
+            return greys < random_cancel
+        elif mode == 'next':
+            return ngreys < random_cancel
+        else:
+            return combi < random_cancel
 
     def _run_walk(self, walkers):
         r'''
@@ -224,6 +255,7 @@ class RandomWalk():
         real = np.ones_like(walkers)
 #        real_coords = np.ndarray([self.nt, nw, self.dim], dtype=int)
         real_coords = []
+        real_coords.append(wr.copy())
         for t in range(self.nt):
             # Random velocity update
             # Randomly select an axis to move along for each walker
@@ -245,6 +277,13 @@ class RandomWalk():
             if np.any(wall_hit):
                 m[wall_hit] = 0
                 mr[wall_hit] = 0
+            # Check that the move out of the current voxel is ok based on the
+            # Grey scale of the image
+            if self.do_grey:
+                cancels = self.get_probable_cancels(walkers, m, 'combi')
+                if np.any(cancels):
+                    m[cancels] = 0
+                    mr[cancels] = 0
             # Reflected velocity in real direction
             wr += mr*real
             walkers += m
@@ -263,7 +302,8 @@ class RandomWalk():
         nt: int (default = 1000)
             the number of timesteps to run the simulation for
         nw: int (default = 1)
-            he vector of the next move to be made by the walker
+            the number of walkers to run in the simulation - None will start 1
+            walker in every non-zero pixel of the image
         same_start: bool
             determines whether to start all the walkers at the same coordinate
         stride: int
@@ -274,11 +314,16 @@ class RandomWalk():
             multiprocessing.
         '''
         self.nt = int(nt)
-        self.nw = int(nw)
+        
         self.stride = stride
-        record_t = int(self.nt/stride)
+        record_t = int(self.nt/stride)+1
         # Get starts
-        walkers = self._get_starts(same_start)
+        if nw is not None:
+            self.nw = int(nw)
+            walkers = self._get_starts(same_start)
+        else:
+            walkers = np.argwhere(self.im > 0.0)
+            self.nw = walkers.shape[0]
         if self.seed:
             # Generate a seed for each timestep
             np.random.seed(1)
@@ -303,7 +348,7 @@ class RandomWalk():
         else:
             # Run in serial
             real_coords = np.asarray(self._run_walk(walkers.tolist()))
-
+        self._walkers = walkers
         self.real_coords = real_coords
 
     def _chunk_walkers(self, walkers, num_chunks):
@@ -350,7 +395,7 @@ class RandomWalk():
         self.data = {}
         fig, ax = plt.subplots(figsize=[6, 6])
         ax.set(aspect=1, xlim=(0, self.nt), ylim=(0, self.nt))
-        x = np.arange(0, self.nt, self.stride)[:, np.newaxis]
+        x = np.arange(0, self.nt+1, self.stride)[:, np.newaxis]
         plt.plot(x, self.msd, 'k-', label='msd')
         print('#'*30)
         print('Square Displacement:')
@@ -435,9 +480,9 @@ class RandomWalk():
         num_copies: int
             the number of times to copy the image along each axis
         '''
-        big_im = self.im.copy()
+        big_im = self.im
         func = [np.vstack, np.hstack, np.dstack]
-        temp_im = self.im.copy()
+        temp_im = big_im.copy()
         for ax in tqdm(range(self.dim), desc='building big image'):
             flip_im = np.flip(temp_im, ax)
             for c in range(num_copies):
@@ -534,21 +579,17 @@ class RandomWalk():
             if not hasattr(self, 'im_big'):
                 self.im_big = self._build_big_image(offset)
             sb = np.sum(self.im_big == self.solid_value)
-            big_im = self._fill_im_big(w_id=w_id, data=data).astype(int)
+            big_im = self._fill_im_big(w_id=w_id, data=data).astype(float)
             sa = np.sum(big_im == self.solid_value - 2)
             fig, ax = plt.subplots(figsize=[6, 6])
             ax.set(aspect=1)
-            solid = big_im == self.solid_value-2
-            solid = solid.astype(float)
-            solid[np.where(solid == 0)] = np.nan
-            porous = big_im == self.solid_value-1
-            porous = porous.astype(float)
-            porous[np.where(porous == 0)] = np.nan
+            plt.imshow(np.ones_like(self.im_big), cmap='bwr', vmin=0, vmax=1)
+            grey = self.im_big.copy().astype(float)
+            grey[grey == 0] = np.nan
+            big_im[big_im < 0] = np.nan
+            plt.imshow(grey, cmap='gist_gray', vmin=0, vmax=1)
             plt.imshow(big_im, cmap=cmap)
-#             Make Solid Black
-            plt.imshow(solid, cmap='binary', vmin=0, vmax=1)
-#             Make Untouched Porous White
-            plt.imshow(porous, cmap='gist_gray', vmin=0, vmax=1)
+
             if check_solid:
                 print('Solid pixel match?', sb == sa, sb, sa)
 
@@ -629,3 +670,14 @@ class RandomWalk():
                         header_written = True
                     w.writerow(self.data)
                     gc.collect()
+
+    def colour_sq_disp(self):
+        starts = self.real_coords[0, :, :]
+        self.im_sq_disp = self.im.copy().astype(int)
+        if self.dim == 3:
+            self.im_sq_disp[starts[:, 0],
+                            starts[:, 1],
+                            starts[:, 2]] = self.sq_disp[-1, :]
+        else:
+            self.im_sq_disp[starts[:, 0],
+                            starts[:, 1]] = self.sq_disp[-1, :]
