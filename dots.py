@@ -15,8 +15,8 @@ if __name__ == '__main__':
     dots = np.zeros([1000, 1000])
     for i in range(10):
         for j in range(10):
-            adjx = np.random.choice(np.arange(-25, 25, 1, np.int), 1)[0]
-            adjy = np.random.choice(np.arange(-25, 25, 1, np.int), 1)[0]
+            adjx = np.random.choice(np.arange(-25, 25, 1, int), 1)[0]
+            adjy = np.random.choice(np.arange(-25, 25, 1, int), 1)[0]
             dots[(100*i)+50+adjx, (100*j)+50+adjy] = 1
     
     dt = spim.distance_transform_edt(dots)
@@ -88,7 +88,7 @@ if __name__ == '__main__':
     plt.figure()
     plt.imshow(dt)
     # thresh = np.linspace(0.525, 0.55, 3)
-    thresh = [0.525]
+    thresh = [0.6]
     rws = []
     ims = []
     for i in range(len(thresh)):

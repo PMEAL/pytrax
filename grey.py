@@ -11,7 +11,7 @@ import numpy as np
 import matplotlib.pyplot as plt
 import scipy.ndimage as spim
 if __name__ == '__main__':
-    im = ps.generators.blobs(shape=[200, 200], porosity=0.5).astype(np.int)
+    im = ps.generators.blobs(shape=[200, 200], porosity=0.5).astype(int)
     plt.figure()
     plt.imshow(im)
     dt = spim.distance_transform_edt(im)

@@ -15,7 +15,7 @@ import time
 plt.close('all')
 def main():
     im = ps.generators.blobs(shape=[1000, 1000], blobiness=3, porosity=0.5)
-    im = ps.filters.fill_blind_pores(im).astype(np.int)
+    im = ps.filters.fill_blind_pores(im).astype(int)
     dt = spim.distance_transform_edt(im)
     grey = dt.copy()/dt.max()
     grey = np.pad(grey, 1, mode='constant', constant_values=0)
